@@ -8,7 +8,7 @@ using namespace std;
 
 int main()
 {
-	WordList list(R"(C:\Dev\words.txt)");
+	WordList list(R"(C:\Dev\enable.txt)");
 	list.load();
 	vector<string> result;
 	while (result.empty())

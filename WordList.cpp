@@ -1,23 +1,5 @@
 #include "WordList.h"
 
-bool WordList::editDistanceIsOne(string a, string b)
-{
-	// Ignore length check for faster code, caller should check lengths
-	// Also we assume that a and b are not equal so we don't check for that
-	int len = a.size();
-	int diff = 0;
-	for (int i = 0; i < len; i++)
-	{
-		if (a[i] != b[i])
-		{
-			diff++;
-			if (diff > 1)
-				return false;
-		}
-	}
-	return true;
-}
-
 WordList::WordList()
 {
 }
@@ -39,21 +21,7 @@ bool WordList::load()
 	int num_words = 0;
 	while (std::getline(file, line)) 
 	{
-		int len = line.size();
-		if (len > mWords.size()) 
-		{
-			mWords.resize(len);
-			mMasks.resize(len);
-		}
-		num_words++;
-		mWords[len-1].push_back(line);
-		for (size_t i = 0; i < line.size(); ++i) {
-			// Generate a mask by replacing the i-th character with '*'
-			std::string mask = line;
-			mask[i] = '*';
-			// Store the word index in the vector of words with the same mask
-			mMasks[len - 1][mask].push_back(mWords[len - 1].size()-1);
-		}
+		addWord(line);
 	}
 	file.close();
 	std::cout << "Loaded " << num_words << " words from " << mFileName << std::endl;
@@ -61,17 +29,24 @@ bool WordList::load()
 	{
 		std::cout << "Words of length " << i + 1 << ": " << mWords[i].size() << std::endl;
 	}
-	// Create the graph for edit distance 1
+	// Create the graphs for words of different lengths
 	for (int i = 0; i < mWords.size(); i++)
 	{
+		WordMasks masks;
+		for (size_t j = 0; j < mWords[i].size(); j++)
+		{
+			addMasks(mWords[i][j], j, masks);
+		}
+
 		mEditDistanceOneGraph.push_back(Graph(mWords[i].size()));
+		// Simple hash function for pairs of integers
 		struct pair_hash {
-			inline std::size_t operator()(const std::pair<int, int>& v) const {
+			inline size_t operator()(const pair<int, int>& v) const {
 				return v.first * 31 + v.second;
 			}
 		};
-		unordered_set<std::pair<int,int>, pair_hash> seenPairs;// To avoid duplicates
-		for (const auto& [mask, wordIds] : mMasks[i])
+		unordered_set<pair<int,int>, pair_hash> seenPairs;// To avoid duplicates
+		for (const auto& [mask, wordIds] : masks)
 		{
 			for (size_t j = 0; j < wordIds.size(); ++j)
 			{
@@ -98,6 +73,28 @@ bool WordList::load()
 	return true;
 }
 
+void WordList::addWord(string word)
+{
+	int len = word.size();
+	if (len > mWords.size())
+	{
+		mWords.resize(len);
+	}
+	mNumWords++;
+	mWords[len - 1].push_back(word);
+}
+
+void WordList::addMasks(string word, size_t word_id, WordMasks& masks)
+{
+	for (size_t i = 0; i < word.size(); ++i) {
+		// Generate a mask by replacing the i-th character with '*'
+		std::string mask = word;
+		mask[i] = '*';
+		// Store the word index in the vector of words with the same mask
+		masks[mask].push_back(word_id);
+	}
+}
+
 vector<string> WordList::findTransform(string a, string b)
 {
 	if (a.size() != b.size())
@@ -121,41 +118,17 @@ vector<string> WordList::findTransform(string a, string b)
 		std::cerr << "Words not found in the list" << std::endl;
 		return vector<string>();
 	}
-	// Use BFS to find the shortest path
-	int num_nodes = mEditDistanceOneGraph[word_len_id].getNumVertices();
-	vector<bool> visited(num_nodes, false);
-	queue<int> q;
-	vector<int> parent(num_nodes, -1);
-	q.push(a_id);
-	while (!q.empty()) {
-		int current = q.front();
-		q.pop();
-		visited[current] = true;
-
-		// If we reach the target node, stop early
-		if (current == b_id) {
-			break;
-		}
-
-		// Explore neighbors
-		auto &adj_list = mEditDistanceOneGraph[word_len_id].mAdjacencyList;
-		for (int neighbor : adj_list[current]) {
-			if (!visited[neighbor]) {
-				parent[neighbor] = current; // Record the parent to reconstruct the path
-				q.push(neighbor);
-			}
-		}
+	auto path = mEditDistanceOneGraph[word_len_id].getShortestPath(a_id, b_id);
+	if (path.empty())
+	{
+		std::cerr << "No transform between "<<a<<" and "<<b<<" found" << std::endl;
 	}
-	if (!visited[b_id]) {
-		std::cerr << "No transform found between " << a << " and " << b << std::endl;
-		return vector<string>(); // No path found
+	vector<string> words;
+	for (auto& id : path)
+	{
+		words.push_back(mWords[word_len_id][id]);
 	}
-	vector<string> path;
-	for (int at = b_id; at != -1; at = parent[at]) {
-		path.push_back(mWords[word_len_id][at]);
-	}
-	std::reverse(path.begin(), path.end());
-	return path;
+	return words;
 }
 
 vector<string> WordList::findRandomTransform()

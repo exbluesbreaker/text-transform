@@ -21,15 +21,17 @@ using std::queue;
 class WordList
 {
 private:
+	using WordMasks = unordered_map<string, vector<int>>;
+	size_t mNumWords = 0;
 	string mFileName;
 	vector<vector<string>> mWords;//vector of vectors of words for given length
-	vector<unordered_map<string,vector<int>>> mMasks;// one replacement masks of words
 	vector<Graph> mEditDistanceOneGraph;
-	bool editDistanceIsOne(string a, string b);
 public:
 	WordList();
 	WordList(string name);
 	bool load();
+	void addWord(string word);
+	void addMasks(string word, size_t word_id, WordMasks& masks);
 	vector<string> findTransform(string a, string b);
 	vector<string> findRandomTransform();
 	~WordList();

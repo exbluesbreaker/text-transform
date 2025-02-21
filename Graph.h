@@ -1,12 +1,16 @@
 #pragma once
 #include <vector>
+#include <queue>
 
 using std::vector;
+using std::queue;
 
 struct Graph
 {
+private:
+	size_t mNumVertices;
+	vector<vector<int>> mAdjacencyList;
 public:
-	vector<vector<int>> mAdjacencyList;// make public for simplicity
 	Graph();
 	Graph(int numVertices);
 	inline void addEdge(int u, int v)
@@ -16,6 +20,8 @@ public:
 		mAdjacencyList[u].push_back(v);
 		mAdjacencyList[v].push_back(u);
 	};
-	int getNumVertices() const { return mAdjacencyList.size(); }
+	int getNumVertices() const { return mNumVertices; }
+	// Find the shortest path between two vertices as a list of vertices, if it exists
+	vector<int> getShortestPath(int u, int v);
 	~Graph();
 };
