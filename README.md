@@ -5,7 +5,9 @@ Given two words and a word list, find a shortest sequence of words from the word
 that turns the first input word into the second input word by changing one letter in
 each step.
 
-[Example of a word list](https://www.wordgamedictionary.com/enable/download/enable.txt)
+[Example of a word list (around 173K)](https://www.wordgamedictionary.com/enable/download/enable.txt)
+
+[Another word list (around 467K)](https://github.com/dwyl/english-words/blob/master/words.txt)
 
 # example 
 
