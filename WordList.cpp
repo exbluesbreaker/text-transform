@@ -32,11 +32,7 @@ bool WordList::load()
 	// Create the graphs for words of different lengths
 	for (int i = 0; i < mWords.size(); i++)
 	{
-		WordMasks masks;
-		for (size_t j = 0; j < mWords[i].size(); j++)
-		{
-			addMasks(mWords[i][j], j, masks);
-		}
+		WordMasks masks = getMasks(i+1);
 
 		mEditDistanceOneGraph.push_back(Graph(mWords[i].size()));
 		// Simple hash function for pairs of integers
@@ -84,15 +80,21 @@ void WordList::addWord(string word)
 	mWords[len - 1].push_back(word);
 }
 
-void WordList::addMasks(string word, size_t word_id, WordMasks& masks)
+WordList::WordMasks WordList::getMasks(size_t len)
 {
-	for (size_t i = 0; i < word.size(); ++i) {
-		// Generate a mask by replacing the i-th character with '*'
-		std::string mask = word;
-		mask[i] = '*';
-		// Store the word index in the vector of words with the same mask
-		masks[mask].push_back(word_id);
+	WordMasks masks;
+	for (size_t i = 0; i < mWords[len-1].size(); i++)
+	{
+		auto &word = mWords[len-1][i];
+		for (size_t j = 0; j < word.size(); j++) {
+			// Generate a mask by replacing the i-th character with '*'
+			std::string mask = word;
+			mask[j] = '*';
+			// Store the word index in the vector of words with the same mask
+			masks[mask].push_back(i);
+		}
 	}
+	return masks;
 }
 
 vector<string> WordList::findTransform(string a, string b)

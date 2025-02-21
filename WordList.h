@@ -26,12 +26,12 @@ private:
 	string mFileName;
 	vector<vector<string>> mWords;//vector of vectors of words for given length
 	vector<Graph> mEditDistanceOneGraph;
+	void addWord(string word);
+	WordMasks getMasks(size_t len);
 public:
 	WordList();
 	WordList(string name);
 	bool load();
-	void addWord(string word);
-	void addMasks(string word, size_t word_id, WordMasks& masks);
 	vector<string> findTransform(string a, string b);
 	vector<string> findRandomTransform();
 	~WordList();
