@@ -4,7 +4,7 @@ WordList::WordList()
 {
 }
 
-WordList::WordList(string name) :mFileName(name)
+WordList::WordList(const string &name) :mFileName(name)
 {
 }
 
@@ -17,22 +17,22 @@ bool WordList::load()
 		std::cerr << "Error opening file: " << mFileName << std::endl;
 		return false;
 	}
-	std::string line;
+	string line;
 	int num_words = 0;
 	while (std::getline(file, line)) 
 	{
 		addWord(line);
 	}
 	file.close();
-	std::cout << "Loaded " << num_words << " words from " << mFileName << std::endl;
-	for (int i = 0; i < mWords.size(); i++)
+	cout << "Loaded " << num_words << " words from " << mFileName << endl;
+	for (size_t i = 0; i < mWords.size(); i++)
 	{
-		std::cout << "Words of length " << i + 1 << ": " << mWords[i].size() << std::endl;
+		cout << "Words of length " << i + 1 << ": " << mWords[i].size() << endl;
 	}
 	// Create the graphs for words of different lengths
-	for (int i = 0; i < mWords.size(); i++)
+	for (size_t i = 0; i < mWords.size(); i++)
 	{
-		WordMasks masks = getMasks(i+1);
+		auto &masks = mMasks[i];
 
 		mEditDistanceOneGraph.push_back(Graph(mWords[i].size()));
 		// Simple hash function for pairs of integers
@@ -69,45 +69,65 @@ bool WordList::load()
 	return true;
 }
 
-void WordList::addWord(string word)
+size_t WordList::addWord(const string &word)
 {
+	// Add word to the list
 	int len = word.size();
 	if (len > mWords.size())
 	{
 		mWords.resize(len);
+		mMasks.resize(len);
 	}
 	mNumWords++;
+	int word_id = mWords[len - 1].size();
 	mWords[len - 1].push_back(word);
+	// Add masks for a word
+	for (size_t j = 0; j < word.size(); j++) 
+	{
+		// Generate a mask by replacing the i-th character with '*'
+		std::string mask = word;
+		mask[j] = '*';
+		// Store the word index in the vector of words with the same mask
+		mMasks[len - 1][mask].push_back(word_id);
+	}
+	return word_id;
 }
 
-WordList::WordMasks WordList::getMasks(size_t len)
+void WordList::addWordToGraph(const string &word)
 {
-	WordMasks masks;
-	for (size_t i = 0; i < mWords[len-1].size(); i++)
+	// Method assumes it follows addWord for a given word
+	size_t word_len_id = word.size()-1;
+	auto& masks = mMasks[word_len_id];
+	auto& words = mWords[word_len_id];
+	mEditDistanceOneGraph[word_len_id].addNode(words.size()-1);
+	for (const auto& [mask, wordIds] : masks)
 	{
-		auto &word = mWords[len-1][i];
-		for (size_t j = 0; j < word.size(); j++) {
-			// Generate a mask by replacing the i-th character with '*'
-			std::string mask = word;
-			mask[j] = '*';
-			// Store the word index in the vector of words with the same mask
-			masks[mask].push_back(i);
+		if (wordIds.size() < 2)
+			continue;
+		// Just added word is the last one always
+		int word_id = wordIds[wordIds.size() - 1];
+		if (words[word_id] != word)
+			continue;
+		for (size_t i = 0; i < wordIds.size() - 1; ++i)
+		{
+			mEditDistanceOneGraph[word_len_id].addEdge(wordIds[i], word_id);
 		}
 	}
-	return masks;
 }
 
-vector<string> WordList::findTransform(string a, string b)
+StringList WordList::findTransform(const string &a, const string &b)
 {
+	// Search for tranform is straightforward
+	// Just use the graph to find the shortest path between nodes corresponding to words
 	if (a.size() != b.size())
 	{
 		std::cerr << "Words must be of the same length" << std::endl;
-		return vector<string>();
+		return StringList();
 	}
 	int a_id = -1;
 	int b_id = -1;
 	int word_len_id = a.size()-1;
-	for (int i = 0; i< mWords[word_len_id].size(); i++)
+	for (size_t i = 0; i< mWords[word_len_id].size(); ++i)
 	{
 		auto &word = mWords[word_len_id][i];
 		if (word == a)
@@ -115,33 +135,48 @@ vector<string> WordList::findTransform(string a, string b)
 		if (word == b)
 			b_id = i;
 	}
-	if (a_id == -1 || b_id == -1)
+	if (a_id == -1)
 	{
-		std::cerr << "Words not found in the list" << std::endl;
-		return vector<string>();
+		cout << "Word "<< a<<" is not in the word list, adding it to the list" << endl;
+		a_id = addWord(a);
+		addWordToGraph(a);
+	}
+	if (b_id == -1)
+	{
+		cout << "Word " << b << " is not in the word list, adding it to the list" << endl;
+		b_id = addWord(b);
+		addWordToGraph(b);
 	}
 	auto path = mEditDistanceOneGraph[word_len_id].getShortestPath(a_id, b_id);
 	if (path.empty())
 	{
-		std::cerr << "No transform between "<<a<<" and "<<b<<" found" << std::endl;
+		cerr << "No transform between "<<a<<" and "<<b<<" found" << endl;
+		return StringList();
 	}
-	vector<string> words;
+	StringList words;
 	for (auto& id : path)
 	{
 		words.push_back(mWords[word_len_id][id]);
 	}
+	cout << "Transform between " << a << " and " << b << " was found :" << endl;
 	return words;
 }
 
-vector<string> WordList::findRandomTransform()
+StringList WordList::findRandomTransform()
 {
 	std::random_device r;
 	std::default_random_engine e1(r());
-	std::uniform_int_distribution<int> uniform_dist(4, 12);
+	std::uniform_int_distribution<int> uniform_dist_len(4, 12);
 	// Select random words from "bigger"(4-12 in enable.txt list) sets of words
-	int word_len_id = uniform_dist(e1);
-	int a_id = rand() % mWords[word_len_id].size();
-	int b_id = rand() % mWords[word_len_id].size();
+	int word_len_id = uniform_dist_len(e1);
+	int a_id = 0;
+	int b_id = 0;
+	while (a_id == b_id)
+	{
+		std::uniform_int_distribution<int> uniform_dist_word(0, mWords[word_len_id].size());
+		a_id = uniform_dist_word(e1);
+		b_id = uniform_dist_word(e1);
+	}
 	return findTransform(mWords[word_len_id][a_id], mWords[word_len_id][b_id]);
 }
 
