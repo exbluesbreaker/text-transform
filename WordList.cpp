@@ -17,6 +17,13 @@ bool WordList::load()
 		cerr << "Error opening file: " << mFileName << endl;
 		return false;
 	}
+	// Clear the data structures
+	mWords.clear();
+	mWords.shrink_to_fit();
+	mMasks.clear();
+	mMasks.shrink_to_fit();
+	mEditDistanceOneGraph.clear();
+	mEditDistanceOneGraph.shrink_to_fit();
 	string line;
 	int num_words = 0;
 	while (std::getline(file, line)) 
