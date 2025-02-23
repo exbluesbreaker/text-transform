@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 #include <queue>
-#include <stdexcept>
+#include <algorithm>
 
 using std::vector;
 using std::queue;
