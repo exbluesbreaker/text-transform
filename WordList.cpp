@@ -14,7 +14,7 @@ bool WordList::load()
 	if (!file) 
 	{
 		// Simple error handling without exceptions
-		std::cerr << "Error opening file: " << mFileName << std::endl;
+		cerr << "Error opening file: " << mFileName << endl;
 		return false;
 	}
 	string line;
@@ -25,17 +25,18 @@ bool WordList::load()
 	}
 	file.close();
 	cout << "Loaded " << num_words << " words from " << mFileName << endl;
-	for (size_t i = 0; i < mWords.size(); i++)
+	for (size_t i = 0; i < mWords.size(); ++i)
 	{
 		cout << "Words of length " << i + 1 << ": " << mWords[i].size() << endl;
 	}
 	// Create the graphs for words of different lengths
-	for (size_t i = 0; i < mWords.size(); i++)
+	for (size_t i = 0; i < mWords.size(); ++i)
 	{
 		auto &masks = mMasks[i];
 
 		mEditDistanceOneGraph.push_back(Graph(mWords[i].size()));
 		// Simple hash function for pairs of integers
+		// https://stackoverflow.com/questions/15160889/how-can-i-make-an-unordered-set-of-pairs-of-integers-in-c
 		struct pair_hash {
 			inline size_t operator()(const pair<int, int>& v) const {
 				return v.first * 31 + v.second;
@@ -44,11 +45,13 @@ bool WordList::load()
 		unordered_set<pair<int,int>, pair_hash> seenPairs;// To avoid duplicates
 		for (const auto& [mask, wordIds] : masks)
 		{
+			// Go through all pairs of words with the same mask and add an edge between them
 			for (size_t j = 0; j < wordIds.size(); ++j)
 			{
 				for (size_t k = j + 1; k < wordIds.size(); ++k)
 				{
 					pair<int, int> new_pair;
+					// Order pair to avoid duplicates
 					if (wordIds[j] < wordIds[k])
 					{
 						new_pair = std::make_pair(wordIds[j], wordIds[k]);
@@ -82,11 +85,11 @@ size_t WordList::addWord(const string &word)
 	int word_id = mWords[len - 1].size();
 	mWords[len - 1].push_back(word);
 	// Add masks for a word
-	for (size_t j = 0; j < word.size(); j++) 
+	for (size_t i = 0; i < word.size(); ++i) 
 	{
 		// Generate a mask by replacing the i-th character with '*'
 		std::string mask = word;
-		mask[j] = '*';
+		mask[i] = '*';
 		// Store the word index in the vector of words with the same mask
 		mMasks[len - 1][mask].push_back(word_id);
 	}
@@ -178,6 +181,45 @@ StringList WordList::findRandomTransform()
 		b_id = uniform_dist_word(e1);
 	}
 	return findTransform(mWords[word_len_id][a_id], mWords[word_len_id][b_id]);
+}
+
+void WordList::printMemoryUsage() const
+{
+	// It doesn't show perfectly exact calculation
+	// Just takes the main contributors to memory usage into account
+	cout << "Memory usage estimation (main contributors, not exact):" << endl;
+	size_t size_graph = 0;
+	for (size_t i = 0; i < mWords.size(); ++i)
+	{
+		size_graph += mEditDistanceOneGraph[i].getMemoryUsage();
+	}
+	cout << "All graphs consume: " << size_graph << " bytes" << endl;
+	size_t size_words = 0;
+	for (size_t i = 0; i < mWords.size(); ++i)
+	{
+		//just estimate size of actually stored strings as the main contributor to memory usage
+		for (const auto& word : mWords[i])
+		{
+			size_words += word.capacity() * sizeof(char);
+		}
+	}
+	cout << "All words consume: " << size_words << " bytes" << endl;
+	size_t size_masks = 0;
+	for (size_t i = 0; i < mMasks.size(); ++i)
+	{
+		// estimate hash map table usage
+		size_masks += mMasks[i].bucket_count() * sizeof(void*);
+		// estimate entries
+		for (const auto& [mask, wordIds] : mMasks[i])
+		{
+			// key is a string
+			size_masks += mask.capacity() * sizeof(char);
+			// value for given key is a vector of integers
+			size_masks += wordIds.capacity() * sizeof(int);
+		}
+	}
+	cout << "All masks consume: " << size_masks << " bytes" << endl;
+	cout << "Total memory usage: " << size_graph + size_words + size_masks << " bytes" << endl;
 }
 
 WordList::~WordList()

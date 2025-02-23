@@ -29,6 +29,7 @@ int main()
 	auto end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double, std::milli> duration = end - start;
 	std::cout << "Load execution time: " << duration.count() << " ms\n";
+	word_list.printMemoryUsage();
 	bool one_more = true;
 	while (one_more)
 	{
@@ -53,7 +54,7 @@ int main()
 			cout << "Enter the second word:" << endl;
 			cin >> b;
 			StringList result = word_list.findTransform(a, b);
-			for (int i = 0; i < result.size(); i++)
+			for (int i = 0; i < result.size(); ++i)
 			{
 				cout << result[i];
 				if (i < result.size() - 1)
@@ -69,7 +70,7 @@ int main()
 			{
 				result = word_list.findRandomTransform();
 			}
-			for (int i = 0; i < result.size(); i++)
+			for (int i = 0; i < result.size(); ++i)
 			{
 				cout << result[i];
 				if (i < result.size() - 1)

@@ -42,5 +42,6 @@ public:
 	bool load();// load words from the file
 	StringList findTransform(const string& a, const string& b);//find a transform between two words of the same length
 	StringList findRandomTransform();//find a random transform between two words of the same length (good for testing)
+	void printMemoryUsage() const;
 	~WordList();
 };

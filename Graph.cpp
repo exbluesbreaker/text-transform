@@ -55,6 +55,18 @@ vector<int> Graph::getShortestPath(size_t u, size_t v)
 	return path;
 }
 
+size_t Graph::getMemoryUsage() const
+{
+	// just estimate adjacency list sizes for existing nodes
+	size_t size = 0;
+	for (size_t i = 0; i < mNumVertices; ++i)
+	{
+		// vector consumes more memory than it actually uses by design
+		size += mAdjacencyList[i].capacity()*sizeof(int);
+	}
+	return size;
+}
+
 Graph::~Graph()
 {
 }

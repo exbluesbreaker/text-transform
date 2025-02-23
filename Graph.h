@@ -34,7 +34,8 @@ public:
 	};
 	int getNumVertices() const { return mNumVertices; }
 	// Find the shortest path between two vertices if it exists
-	// Return it as a list of vertices, 
+	// Return it as a list of vertices 
 	vector<int> getShortestPath(size_t u, size_t v);
+	size_t getMemoryUsage() const;
 	~Graph();
 };
