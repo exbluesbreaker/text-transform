@@ -25,8 +25,13 @@ int main()
 		word_list.setFileName(string(def_path));
 	}	
 	auto start = std::chrono::high_resolution_clock::now();
-	word_list.load();
+	bool status = word_list.load();
 	auto end = std::chrono::high_resolution_clock::now();
+	if (!status)
+	{
+		cout << "Failed to load the word list" << endl;
+		return 1;
+	}
 	std::chrono::duration<double, std::milli> duration = end - start;
 	std::cout << "Load execution time: " << duration.count() << " ms\n";
 	word_list.printMemoryUsage();
