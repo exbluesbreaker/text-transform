@@ -41,14 +41,6 @@ bool WordList::load()
 		auto &masks = mMasks[i];
 
 		mEditDistanceOneGraph.push_back(Graph(mWords[i].size()));
-		// Simple hash function for pairs of integers
-		// https://stackoverflow.com/questions/15160889/how-can-i-make-an-unordered-set-of-pairs-of-integers-in-c
-		struct pair_hash {
-			inline size_t operator()(const pair<int, int>& v) const {
-				return v.first * 31 + v.second;
-			}
-		};
-		unordered_set<pair<int,int>, pair_hash> seenPairs;// To avoid duplicates
 		for (const auto& [mask, wordIds] : masks)
 		{
 			// Go through all pairs of words with the same mask and add an edge between them
@@ -56,21 +48,7 @@ bool WordList::load()
 			{
 				for (size_t k = j + 1; k < wordIds.size(); ++k)
 				{
-					pair<int, int> new_pair;
-					// Order pair to avoid duplicates
-					if (wordIds[j] < wordIds[k])
-					{
-						new_pair = std::make_pair(wordIds[j], wordIds[k]);
-					}
-					else
-					{
-						new_pair = std::make_pair(wordIds[k], wordIds[j]);
-					}
-					if (!seenPairs.contains(new_pair))
-					{
-						mEditDistanceOneGraph[i].addEdge(new_pair.first, new_pair.second);
-						seenPairs.insert(new_pair);
-					}
+					mEditDistanceOneGraph[i].addEdge(wordIds[j], wordIds[k]);
 				}
 			}
 		}
