@@ -20,7 +20,7 @@ Transform word ***fleys*** into ***mania*** using the list above:
 - To solve this task we store list of words combined by word length.
 - Then we represent all words of the same length as a graph with nodes being words and edge being single character transform existing between words. 
 E.g. ***gleds*** and ***sleds*** will have and edge between them (there exist 1 character transform between them), but ***gleds*** and ***seeds*** won't have an edge between them, because you cannot make one from the other by changing single character.
-- To find all edges effectively we make all 1-replacement masks for a given word replacing single character by ***\****, so for seeds masks would be (***\*eeds,s\*eds,se\*ds,see\*s,seed\****).
+- To find all edges effectively we make all 1-replacement masks for a given word replacing single character by ***\****, so for ***seeds*** masks would be (***\*eeds,s\*eds,se\*ds,see\*s,seed\****).
 We use hashtable with those masks as entries and we we add given word to vector corresponding to its masks.
 - After building this hashtable for all word, every vector corresponding to the same mask have words with single character transform between them.
 So we just need to go through all pairs of entries and add an edge between them.
