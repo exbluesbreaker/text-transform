@@ -25,13 +25,12 @@ bool WordList::load()
 	mEditDistanceOneGraph.clear();
 	mEditDistanceOneGraph.shrink_to_fit();
 	string line;
-	int num_words = 0;
 	while (std::getline(file, line)) 
 	{
 		addWord(line);
 	}
 	file.close();
-	cout << "Loaded " << num_words << " words from " << mFileName << endl;
+	cout << "Loaded " << mNumWords << " words from " << mFileName << endl;
 	for (size_t i = 0; i < mWords.size(); ++i)
 	{
 		cout << "Words of length " << i + 1 << ": " << mWords[i].size() << endl;
